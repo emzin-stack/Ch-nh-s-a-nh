@@ -2,17 +2,13 @@
 
 /**
  * MODIFIED FILE: app/page.tsx
- *
- * Changes vs original:
- *   1. import useI18n
- *   2. const { t } = useI18n() inside component
- *   3. feature cards array moved inside component (needs t())
- *   4. Replace all hardcoded strings with t()
+ * * Sửa lỗi: Hiển thị nút History khi đã đăng nhập (User exists)
+ * thay vì ẩn đi và chỉ hiện nút Register.
  */
 
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
-import { useI18n } from '@/lib/i18n'; // NEW
+import { useI18n } from '@/lib/i18n'; 
 import { Navbar } from '@/components/ui/Navbar';
 import {
   Zap, Crop, ArrowLeftRight, Download, History, Shield,
@@ -21,16 +17,15 @@ import {
 
 export default function HomePage() {
   const { user } = useAuth();
-  const { t } = useI18n(); // NEW
+  const { t } = useI18n(); 
 
-  // Moved inside component so t() is available for title/desc
   const features = [
-    { icon: Zap,            title: t('feat_compress_title'), desc: t('feat_compress_desc') },
-    { icon: Crop,           title: t('feat_crop_title'),     desc: t('feat_crop_desc') },
+    { icon: Zap,             title: t('feat_compress_title'), desc: t('feat_compress_desc') },
+    { icon: Crop,            title: t('feat_crop_title'),     desc: t('feat_crop_desc') },
     { icon: ArrowLeftRight, title: t('feat_compare_title'),  desc: t('feat_compare_desc') },
-    { icon: Download,       title: t('feat_download_title'), desc: t('feat_download_desc') },
-    { icon: History,        title: t('feat_history_title'),  desc: t('feat_history_desc') },
-    { icon: Shield,         title: t('feat_secure_title'),   desc: t('feat_secure_desc') },
+    { icon: Download,        title: t('feat_download_title'), desc: t('feat_download_desc') },
+    { icon: History,         title: t('feat_history_title'),  desc: t('feat_history_desc') },
+    { icon: Shield,          title: t('feat_secure_title'),   desc: t('feat_secure_desc') },
   ];
 
   return (
@@ -84,6 +79,7 @@ export default function HomePage() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {/* Nút Editor - Luôn hiện */}
               <Link
                 href="/editor"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-105 active:scale-95"
@@ -93,7 +89,18 @@ export default function HomePage() {
                 {t('home_cta_editor')}
                 <ChevronRight size={16} />
               </Link>
-              {!user && (
+
+              {/* Logic điều kiện: Đã đăng nhập hiện History, chưa đăng nhập hiện Register */}
+              {user ? (
+                <Link
+                  href="/history"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-105 active:scale-95"
+                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border-md)', color: 'var(--text)' }}
+                >
+                  <History size={16} />
+                  {t('nav_history')}
+                </Link>
+              ) : (
                 <Link
                   href="/register"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-105 active:scale-95"
