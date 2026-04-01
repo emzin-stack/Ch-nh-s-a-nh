@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import { UploadCloud, RefreshCcw, FileImage } from 'lucide-react';
 import { formatBytes } from '@/lib/imageProcessing';
+import { useI18n } from '@/lib/i18n'; // ← NEW
 
 interface Props {
   onFileSelect: (file: File) => Promise<boolean>;
@@ -14,6 +15,7 @@ interface Props {
 export function ImageUploader({ onFileSelect, hasImage, originalSize, filename }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const { t } = useI18n(); // ← NEW
 
   const processFile = useCallback(
     async (file: File) => {
@@ -81,7 +83,7 @@ export function ImageUploader({ onFileSelect, hasImage, originalSize, filename }
             }}
           >
             <RefreshCcw size={12} />
-            Replace
+            {t('upload_replace')}
           </span>
         </label>
       </div>
@@ -126,10 +128,10 @@ export function ImageUploader({ onFileSelect, hasImage, originalSize, filename }
 
       <div className="text-center">
         <p className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
-          {isUploading ? 'Loading…' : 'Drop image here or click to upload'}
+          {isUploading ? t('upload_loading') : t('upload_drop')}
         </p>
         <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-          JPG, PNG, GIF, WebP · Max 20 MB
+          {t('upload_hint')}
         </p>
       </div>
     </label>

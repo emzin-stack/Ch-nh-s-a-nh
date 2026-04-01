@@ -1,14 +1,26 @@
 'use client';
 
+/**
+ * MODIFIED FILE: app/(auth)/register/page.tsx
+ *
+ * Changes vs original:
+ *   1. import useI18n
+ *   2. const { t } = useI18n() inside component
+ *   3. Replace every hardcoded string with t()
+ *   4. Validation error messages use t() keys
+ */
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
+import { useI18n } from '@/lib/i18n'; // NEW
 import { Zap, Mail, Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { t } = useI18n(); // NEW
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
@@ -22,17 +34,16 @@ export default function RegisterPage() {
     setError('');
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+      setError(t('register_err_short')); // t() replaces hardcoded message
       return;
     }
     if (password !== confirmPw) {
-      setError('Passwords do not match.');
+      setError(t('register_err_mismatch')); // t() replaces hardcoded message
       return;
     }
 
     setLoading(true);
     const { error: authError } = await supabase.auth.signUp({ email, password });
-
     if (authError) {
       setError(authError.message);
       setLoading(false);
@@ -53,10 +64,10 @@ export default function RegisterPage() {
             <CheckCircle size={32} />
           </div>
           <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--text)' }}>
-            Account created!
+            {t('register_success_title')}
           </h2>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            Redirecting you to the editor…
+            {t('register_success_sub')}
           </p>
         </div>
       </div>
@@ -67,10 +78,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg)' }}>
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            'radial-gradient(ellipse 50% 60% at 50% 50%, rgba(34,211,238,0.05) 0%, transparent 70%)',
-        }}
+        style={{ background: 'radial-gradient(ellipse 50% 60% at 50% 50%, rgba(34,211,238,0.05) 0%, transparent 70%)' }}
       />
 
       <div className="relative w-full max-w-md animate-slide-up">
@@ -81,25 +89,21 @@ export default function RegisterPage() {
           >
             <Zap size={22} className="text-black" />
           </div>
-          <h1
-            className="text-3xl font-extrabold tracking-tight"
-            style={{ fontFamily: 'var(--font-display)', color: 'var(--text)' }}
-          >
-            Create account
+          <h1 className="text-3xl font-extrabold tracking-tight" style={{ fontFamily: 'var(--font-display)', color: 'var(--text)' }}>
+            {t('register_title')}
           </h1>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Save your edits, access history anywhere
+            {t('register_subtitle')}
           </p>
         </div>
 
-        <div
-          className="p-8 rounded-2xl"
-          style={{ background: 'var(--surface-1)', border: '1px solid var(--border)' }}
-        >
+        <div className="p-8 rounded-2xl" style={{ background: 'var(--surface-1)', border: '1px solid var(--border)' }}>
           <form onSubmit={handleRegister} className="space-y-4">
+
+            {/* Email */}
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                EMAIL
+                {t('register_email_label')}
               </label>
               <div className="relative">
                 <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
@@ -117,9 +121,10 @@ export default function RegisterPage() {
               </div>
             </div>
 
+            {/* Password */}
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                PASSWORD
+                {t('register_password_label')}
               </label>
               <div className="relative">
                 <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
@@ -139,14 +144,17 @@ export default function RegisterPage() {
                   onClick={() => setShowPw(!showPw)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity"
                 >
-                  {showPw ? <EyeOff size={14} style={{ color: 'var(--text-muted)' }} /> : <Eye size={14} style={{ color: 'var(--text-muted)' }} />}
+                  {showPw
+                    ? <EyeOff size={14} style={{ color: 'var(--text-muted)' }} />
+                    : <Eye size={14} style={{ color: 'var(--text-muted)' }} />}
                 </button>
               </div>
             </div>
 
+            {/* Confirm Password */}
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
-                CONFIRM PASSWORD
+                {t('register_confirm_label')}
               </label>
               <div className="relative">
                 <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
@@ -178,21 +186,21 @@ export default function RegisterPage() {
             )}
 
             <Button variant="primary" className="w-full" loading={loading} type="submit">
-              Create Account
+              {t('register_submit')}
             </Button>
           </form>
 
           <div className="mt-4 pt-4 text-center text-sm" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-            Already have an account?{' '}
+            {t('register_have_account')}{' '}
             <Link href="/login" style={{ color: 'var(--accent)' }} className="hover:underline font-medium">
-              Sign in
+              {t('register_signin_link')}
             </Link>
           </div>
         </div>
 
         <div className="mt-4 text-center">
           <Link href="/editor" className="text-sm hover:underline" style={{ color: 'var(--text-muted)' }}>
-            Continue as guest →
+            {t('register_guest_link')}
           </Link>
         </div>
       </div>

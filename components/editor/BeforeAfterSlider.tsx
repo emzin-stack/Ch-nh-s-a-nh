@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { ArrowLeftRight } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 interface Props {
   beforeUrl: string | null;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function BeforeAfterSlider({ beforeUrl, afterUrl }: Props) {
+  const { t } = useI18n();
   const [sliderX, setSliderX] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -20,7 +22,7 @@ export function BeforeAfterSlider({ beforeUrl, afterUrl }: Props) {
     setSliderX(pct);
   }, []);
 
-  // Xử lý kéo thả mượt mà trên toàn màn hình
+  // Global mouse tracking so dragging works even if cursor leaves the container
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (isDragging) updateSlider(e.clientX);
@@ -37,16 +39,29 @@ export function BeforeAfterSlider({ beforeUrl, afterUrl }: Props) {
     };
   }, [isDragging, updateSlider]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    updateSlider(e.touches[0].clientX);
-  }, [updateSlider]);
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => { updateSlider(e.touches[0].clientX); },
+    [updateSlider]
+  );
 
-  // Giao diện khi chưa có ảnh
+  // Empty state
   if (!beforeUrl && !afterUrl) {
     return (
-      <div className="mx-auto max-w-[500px] w-full flex flex-col items-center justify-center gap-3 rounded-2xl p-8 text-center border border-dashed border-gray-600 bg-white/5" style={{ minHeight: '240px' }}>
-         <ArrowLeftRight size={24} className="text-gray-400 opacity-50" />
-         <p className="text-sm text-gray-400">No images to compare</p>
+      <div
+        className="mx-auto max-w-[500px] w-full flex flex-col items-center justify-center gap-3 rounded-2xl p-8 text-center"
+        style={{
+          minHeight: '240px',
+          border: '1px dashed rgba(255,255,255,0.12)',
+          background: 'rgba(255,255,255,0.03)',
+        }}
+      >
+        <ArrowLeftRight size={24} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          {t('compare_title')}
+        </p>
+        <p className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
+          {t('compare_empty')}
+        </p>
       </div>
     );
   }
@@ -54,93 +69,127 @@ export function BeforeAfterSlider({ beforeUrl, afterUrl }: Props) {
   const hasAfter = !!afterUrl && afterUrl !== beforeUrl;
 
   return (
-    <div className="mx-auto max-w-[700px] w-full space-y-4 p-4">
+    <div className="mx-auto max-w-[700px] w-full space-y-3">
       <div
         ref={containerRef}
-        className="relative overflow-hidden rounded-2xl select-none cursor-col-resize shadow-2xl border border-white/10"
+        className="relative overflow-hidden rounded-2xl select-none cursor-col-resize"
         style={{
           aspectRatio: '16/9',
           background: '#0a0a0a',
           touchAction: 'none',
+          boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+          border: '1px solid rgba(255,255,255,0.08)',
         }}
         onMouseDown={() => setIsDragging(true)}
         onTouchStart={() => setIsDragging(true)}
         onTouchMove={handleTouchMove}
       >
-        {/* LỚP DƯỚI: AFTER IMAGE (Full width) */}
+        {/* BOTTOM LAYER: AFTER image (full width) */}
         {afterUrl && (
           <img
             src={afterUrl}
-            alt="After"
+            alt={t('compare_after')}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
             draggable={false}
           />
         )}
 
-        {/* LỚP TRÊN: BEFORE IMAGE (Bị cắt bởi clipPath) */}
+        {/* TOP LAYER: BEFORE image, clipped by clipPath */}
         {beforeUrl && (
           <img
             src={beforeUrl}
-            alt="Before"
+            alt={t('compare_before')}
             className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            style={{ 
+            style={{
               clipPath: `inset(0 ${100 - sliderX}% 0 0)`,
-              zIndex: 5
+              zIndex: 5,
             }}
             draggable={false}
           />
         )}
 
-        {/* CÁC NHÃN (LABELS) - ĐÃ ĐẢO VỊ TRÍ THEO Ý BẠN */}
         {hasAfter && (
           <>
-            {/* AFTER label - Ở bên TRÁI */}
+            {/* AFTER label — left side (the image underneath, the edited one) */}
             <div
               className="absolute z-20 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest pointer-events-none"
-              style={{ 
-                top: '16px', 
-                left: '16px', 
-                background: 'rgba(6, 182, 212, 0.7)', // Màu Cyan cho ảnh mới
-                color: '#fff',
+              style={{
+                top: '14px',
+                left: '14px',
+                background: 'rgba(34,211,238,0.75)',
+                color: '#000',
                 backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(255,255,255,0.1)'
+                border: '1px solid rgba(255,255,255,0.15)',
               }}
             >
-              AFTER
+              {t('compare_after')}
             </div>
 
-            {/* BEFORE label - Ở bên PHẢI */}
+            {/* BEFORE label — right side (the original clipped on top) */}
             <div
               className="absolute z-20 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest pointer-events-none"
-              style={{ 
-                top: '16px', 
-                right: '16px', 
-                background: 'rgba(0,0,0,0.6)', // Nền đen cho ảnh gốc
+              style={{
+                top: '14px',
+                right: '14px',
+                background: 'rgba(0,0,0,0.65)',
                 color: '#fff',
                 backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(255,255,255,0.1)'
+                border: '1px solid rgba(255,255,255,0.12)',
               }}
             >
-              BEFORE
+              {t('compare_before')}
             </div>
 
-            {/* THANH TRƯỢT VÀ NÚT KÉO */}
+            {/* Divider line + drag handle */}
             <div
-              className="absolute top-0 bottom-0 w-0.5 z-10 bg-white"
-              style={{ left: `${sliderX}%`, boxShadow: '0 0 15px rgba(0,0,0,0.5)' }}
+              className="absolute top-0 bottom-0 z-10"
+              style={{
+                left: `${sliderX}%`,
+                width: '2px',
+                background: 'rgba(255,255,255,0.9)',
+                boxShadow: '0 0 12px rgba(0,0,0,0.6)',
+              }}
             >
-              <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-white flex items-center justify-center shadow-2xl border-[3px] border-black/10">
-                <ArrowLeftRight size={16} className="text-black" />
+              {/* Handle circle */}
+              <div
+                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex items-center justify-center rounded-full"
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  background: '#fff',
+                  boxShadow: '0 2px 16px rgba(0,0,0,0.55)',
+                  border: '2.5px solid rgba(0,0,0,0.08)',
+                }}
+              >
+                <ArrowLeftRight size={15} style={{ color: '#111' }} />
               </div>
             </div>
           </>
         )}
+
+        {/* Single-image overlay when no edits applied yet */}
+        {!hasAfter && beforeUrl && (
+          <div
+            className="absolute inset-0 flex items-center justify-center z-20"
+            style={{ pointerEvents: 'none' }}
+          >
+            <div
+              className="px-3 py-1.5 rounded-lg text-xs font-medium"
+              style={{ background: 'rgba(0,0,0,0.65)', color: 'var(--text-muted)', backdropFilter: 'blur(6px)' }}
+            >
+              {t('compare_no_edits')}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* CHỮ HƯỚNG DẪN */}
+      {/* Drag hint */}
       {hasAfter && (
-        <p className="text-[10px] text-center text-gray-500 font-bold tracking-[0.2em] uppercase opacity-60">
-          ← Drag to compare →
+        <p
+          className="text-center font-bold tracking-[0.18em] uppercase"
+          style={{ fontSize: '10px', color: 'var(--text-muted)', opacity: 0.55 }}
+        >
+          {t('compare_hint')}
         </p>
       )}
     </div>

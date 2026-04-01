@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/Button';
 import { formatBytes, estimateCompressedSize } from '@/lib/imageProcessing';
 import { Zap } from 'lucide-react';
+import { useI18n } from '@/lib/i18n'; // ← NEW
 
 interface Props {
   quality: number;
@@ -21,14 +22,16 @@ const presets = [
 ];
 
 export function CompressionTool({ quality, onQualityChange, onApply, isProcessing, originalSize, editedSize }: Props) {
+  const { t } = useI18n(); // ← NEW
   const estimated = estimateCompressedSize(originalSize, quality);
   const reduction = originalSize > 0 ? Math.round((1 - estimated / originalSize) * 100) : 0;
 
+  // ← t() replaces hardcoded quality labels
   const qualityLabel =
-    quality >= 85 ? 'Excellent' :
-    quality >= 70 ? 'Good' :
-    quality >= 50 ? 'Medium' :
-    quality >= 30 ? 'Low' : 'Very Low';
+    quality >= 85 ? t('compress_excellent') :
+    quality >= 70 ? t('compress_good') :
+    quality >= 50 ? t('compress_medium') :
+    quality >= 30 ? t('compress_low') : t('compress_very_low');
 
   const qualityColor =
     quality >= 85 ? '#34d399' :
@@ -40,7 +43,7 @@ export function CompressionTool({ quality, onQualityChange, onApply, isProcessin
     <div className="space-y-5">
       {/* Presets */}
       <div>
-        <p className="text-xs font-medium mb-2.5" style={{ color: 'var(--text-muted)' }}>PRESETS</p>
+        <p className="text-xs font-medium mb-2.5" style={{ color: 'var(--text-muted)' }}>{t('compress_presets')}</p> {/* ← t() */}
         <div className="grid grid-cols-4 gap-2">
           {presets.map((p) => (
             <button
@@ -62,7 +65,7 @@ export function CompressionTool({ quality, onQualityChange, onApply, isProcessin
       {/* Slider */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>QUALITY</p>
+          <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{t('compress_quality')}</p> {/* ← t() */}
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold" style={{ color: qualityColor }}>{qualityLabel}</span>
             <span
@@ -86,8 +89,8 @@ export function CompressionTool({ quality, onQualityChange, onApply, isProcessin
           }}
         />
         <div className="flex justify-between mt-1">
-          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Smallest</span>
-          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Highest quality</span>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{t('compress_smallest')}</span>   {/* ← t() */}
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{t('compress_highest')}</span>   {/* ← t() */}
         </div>
       </div>
 
@@ -97,13 +100,13 @@ export function CompressionTool({ quality, onQualityChange, onApply, isProcessin
         style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}
       >
         <div>
-          <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Original</p>
+          <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{t('compress_original')}</p>  {/* ← t() */}
           <p className="text-sm font-semibold font-mono" style={{ color: 'var(--text)' }}>
             {formatBytes(originalSize)}
           </p>
         </div>
         <div>
-          <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Estimated</p>
+          <p className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>{t('compress_estimated')}</p>  {/* ← t() */}
           <p className="text-sm font-semibold font-mono" style={{ color: 'var(--accent)' }}>
             {formatBytes(estimated)}
           </p>
@@ -111,7 +114,10 @@ export function CompressionTool({ quality, onQualityChange, onApply, isProcessin
         {reduction > 0 && (
           <div className="col-span-2 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
             <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-              Reduction: <span style={{ color: '#34d399', fontWeight: 600 }}>~{reduction}% smaller</span>
+              {t('compress_reduction')}{' '}  {/* ← t() */}
+              <span style={{ color: '#34d399', fontWeight: 600 }}>
+                {t('compress_smaller', { pct: reduction })}  {/* ← t() with var */}
+              </span>
             </p>
           </div>
         )}
@@ -125,7 +131,7 @@ export function CompressionTool({ quality, onQualityChange, onApply, isProcessin
         loading={isProcessing}
         disabled={!originalSize}
       >
-        Apply Compression
+        {t('compress_apply')} {/* ← t() */}
       </Button>
     </div>
   );

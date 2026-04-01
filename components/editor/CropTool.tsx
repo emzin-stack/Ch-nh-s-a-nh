@@ -5,6 +5,7 @@ import Cropper from 'react-easy-crop';
 import { Button } from '@/components/ui/Button';
 import { Crop, RotateCcw } from 'lucide-react';
 import { CropArea, AspectRatio } from '@/types';
+import { useI18n } from '@/lib/i18n'; // ← NEW
 
 interface Props {
   imageUrl: string | null;
@@ -21,18 +22,20 @@ interface CropperArea {
   height: number;
 }
 
-const ratios: { label: string; value: AspectRatio; numeric: number | undefined }[] = [
-  { label: '1:1',       value: '1:1',   numeric: 1 },
-  { label: '16:9',      value: '16:9',  numeric: 16 / 9 },
-  { label: '9:16',      value: '9:16',  numeric: 9 / 16 },
-  { label: 'Free',      value: 'free',  numeric: undefined },
-];
-
 export function CropTool({ imageUrl, onCropComplete, onApply, onReset, isProcessing }: Props) {
+  const { t } = useI18n(); // ← NEW
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [selectedRatio, setSelectedRatio] = useState<AspectRatio>('free');
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<CropperArea | null>(null);
+
+  // ← ratios now use t() for the 'Free' label — defined inside component
+  const ratios: { label: string; value: AspectRatio; numeric: number | undefined }[] = [
+    { label: '1:1',         value: '1:1',   numeric: 1 },
+    { label: '16:9',        value: '16:9',  numeric: 16 / 9 },
+    { label: '9:16',        value: '9:16',  numeric: 9 / 16 },
+    { label: t('crop_free'), value: 'free',  numeric: undefined }, // ← t()
+  ];
 
   const handleCropComplete = useCallback(
     (_: unknown, areaPixels: CropperArea) => {
@@ -72,7 +75,7 @@ export function CropTool({ imageUrl, onCropComplete, onApply, onReset, isProcess
         className="flex items-center justify-center rounded-xl p-8 text-sm"
         style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}
       >
-        Upload an image to use the crop tool
+        {t('crop_upload_prompt')} {/* ← t() */}
       </div>
     );
   }
@@ -81,7 +84,7 @@ export function CropTool({ imageUrl, onCropComplete, onApply, onReset, isProcess
     <div className="space-y-4">
       {/* Aspect ratio selector */}
       <div>
-        <p className="text-xs font-medium mb-2.5" style={{ color: 'var(--text-muted)' }}>ASPECT RATIO</p>
+        <p className="text-xs font-medium mb-2.5" style={{ color: 'var(--text-muted)' }}>{t('crop_ratio')}</p> {/* ← t() */}
         <div className="grid grid-cols-4 gap-2">
           {ratios.map((r) => (
             <button
@@ -122,7 +125,7 @@ export function CropTool({ imageUrl, onCropComplete, onApply, onReset, isProcess
       {/* Zoom slider */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>ZOOM</p>
+          <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{t('crop_zoom')}</p> {/* ← t() */}
           <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>{zoom.toFixed(1)}×</span>
         </div>
         <input
@@ -157,7 +160,7 @@ export function CropTool({ imageUrl, onCropComplete, onApply, onReset, isProcess
           onClick={handleReset}
           className="flex-1"
         >
-          Reset
+          {t('crop_reset')} {/* ← t() */}
         </Button>
         <Button
           variant="primary"
@@ -168,7 +171,7 @@ export function CropTool({ imageUrl, onCropComplete, onApply, onReset, isProcess
           disabled={!croppedAreaPixels}
           className="flex-1"
         >
-          Apply Crop
+          {t('crop_apply')} {/* ← t() */}
         </Button>
       </div>
     </div>

@@ -1,8 +1,19 @@
 'use client';
 
+/**
+ * MODIFIED FILE: components/editor/FormatConverter.tsx
+ *
+ * Changes vs original:
+ *   1. import useI18n
+ *   2. const { t } = useI18n() inside component
+ *   3. formats array moved inside component (needs t())
+ *   4. Replace: 'OUTPUT FORMAT', format descriptions, warning, 'Convert Format'
+ */
+
 import { Button } from '@/components/ui/Button';
 import { ImageFormat } from '@/types';
 import { RefreshCw } from 'lucide-react';
+import { useI18n } from '@/lib/i18n'; // ← NEW
 
 interface Props {
   currentFormat: ImageFormat;
@@ -13,18 +24,23 @@ interface Props {
   hasImage: boolean;
 }
 
-const formats: { value: ImageFormat; label: string; desc: string; supports: string }[] = [
-  { value: 'jpg',  label: 'JPG',  desc: 'Best for photos', supports: 'No transparency' },
-  { value: 'png',  label: 'PNG',  desc: 'Lossless quality', supports: 'Transparency ✓' },
-  { value: 'webp', label: 'WebP', desc: 'Modern & efficient', supports: 'Transparency ✓' },
-  { value: 'gif',  label: 'GIF',  desc: 'Animated images', supports: 'Limited colors' },
-];
-
 export function FormatConverter({ currentFormat, outputFormat, onFormatChange, onApply, isProcessing, hasImage }: Props) {
+  const { t } = useI18n(); // ← NEW
+
+  // ← moved inside component so t() is available for the description strings
+  const formats: { value: ImageFormat; label: string; desc: string; supports: string }[] = [
+    { value: 'jpg',  label: 'JPG',  desc: t('format_photos'),   supports: t('format_no_alpha') },
+    { value: 'png',  label: 'PNG',  desc: t('format_lossless'), supports: t('format_alpha') },
+    { value: 'webp', label: 'WebP', desc: t('format_modern'),   supports: t('format_alpha') },
+    { value: 'gif',  label: 'GIF',  desc: t('format_animated'), supports: t('format_limited') },
+  ];
+
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs font-medium mb-2.5" style={{ color: 'var(--text-muted)' }}>OUTPUT FORMAT</p>
+        <p className="text-xs font-medium mb-2.5" style={{ color: 'var(--text-muted)' }}>
+          {t('format_output')}
+        </p>
         <div className="grid grid-cols-2 gap-2">
           {formats.map((f) => {
             const isSelected = outputFormat === f.value;
@@ -61,42 +77,28 @@ export function FormatConverter({ currentFormat, outputFormat, onFormatChange, o
         </div>
       </div>
 
-      {/* Conversion info */}
       {currentFormat && (
         <div
           className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs"
           style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
         >
-          <span
-            className="px-1.5 py-0.5 rounded font-mono font-bold"
-            style={{ background: 'var(--surface-3)', color: 'var(--text)' }}
-          >
+          <span className="px-1.5 py-0.5 rounded font-mono font-bold" style={{ background: 'var(--surface-3)', color: 'var(--text)' }}>
             .{currentFormat}
           </span>
           <span>→</span>
-          <span
-            className="px-1.5 py-0.5 rounded font-mono font-bold"
-            style={{ background: 'rgba(34,211,238,0.15)', color: 'var(--accent)' }}
-          >
+          <span className="px-1.5 py-0.5 rounded font-mono font-bold" style={{ background: 'rgba(34,211,238,0.15)', color: 'var(--accent)' }}>
             .{outputFormat}
           </span>
           {(outputFormat === 'jpg' || outputFormat === 'jpeg') && (
             <span className="ml-auto text-xs" style={{ color: '#fbbf24', fontSize: '10px' }}>
-              ⚠ Transparency will become white
+              {t('format_warning')}
             </span>
           )}
         </div>
       )}
 
-      <Button
-        variant="primary"
-        className="w-full"
-        icon={<RefreshCw size={14} />}
-        onClick={onApply}
-        loading={isProcessing}
-        disabled={!hasImage}
-      >
-        Convert Format
+      <Button variant="primary" className="w-full" icon={<RefreshCw size={14} />} onClick={onApply} loading={isProcessing} disabled={!hasImage}>
+        {t('format_apply')}
       </Button>
     </div>
   );

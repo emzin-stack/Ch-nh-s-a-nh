@@ -3,11 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useI18n } from '@/lib/i18n';                           // ← NEW
+import { LanguageToggle } from '@/components/ui/LanguageToggle'; // ← NEW
 import { Zap, History, LogOut, LogIn, UserPlus, Image as ImageIcon } from 'lucide-react';
 
 export function Navbar() {
   const { user, loading, signOut } = useAuth();
   const pathname = usePathname();
+  const { t } = useI18n(); // ← NEW
 
   const navLink = (href: string, label: string, icon: React.ReactNode) => {
     const active = pathname === href;
@@ -53,12 +56,13 @@ export function Navbar() {
 
       {/* Center links */}
       <div className="hidden md:flex items-center gap-1">
-        {navLink('/editor', 'Editor', <ImageIcon size={14} />)}
-        {user && navLink('/history', 'History', <History size={14} />)}
+        {navLink('/editor', t('nav_editor'), <ImageIcon size={14} />)}
+        {user && navLink('/history', t('nav_history'), <History size={14} />)}
       </div>
 
       {/* Auth actions */}
       <div className="flex items-center gap-2">
+        <LanguageToggle /> {/* ← NEW */}
         {loading ? (
           <div className="w-20 h-7 rounded-lg shimmer" />
         ) : user ? (
@@ -76,7 +80,7 @@ export function Navbar() {
               }}
             >
               <LogOut size={13} />
-              <span className="hidden sm:inline">Sign out</span>
+              <span className="hidden sm:inline">{t('nav_signout')}</span>
             </button>
           </>
         ) : (
@@ -91,7 +95,7 @@ export function Navbar() {
               }}
             >
               <LogIn size={13} />
-              Login
+              {t('nav_login')}
             </Link>
             <Link
               href="/register"
@@ -102,7 +106,7 @@ export function Navbar() {
               }}
             >
               <UserPlus size={13} />
-              Register
+              {t('nav_register')}
             </Link>
           </>
         )}
