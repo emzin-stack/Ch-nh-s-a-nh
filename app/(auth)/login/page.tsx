@@ -1,25 +1,59 @@
 'use client';
 
-/**
- * MODIFIED FILE: app/(auth)/login/page.tsx
- *
- * Changes vs original:
- *   1. import useI18n
- *   2. const { t } = useI18n() inside component
- *   3. Replace every hardcoded label, placeholder hint, link text with t()
- */
-
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/Button';
-import { useI18n } from '@/lib/i18n'; // NEW
+import { useI18n } from '@/lib/i18n';
 import { Zap, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+
+// ─── Reusable field wrappers ──────────────────────────────────────────────────
+// Using flex rows instead of absolute positioning for the eye button so the
+// input text area is ALWAYS bounded by real layout — never overlaps the icon.
+
+function IconInput({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="flex items-center gap-0 rounded-xl overflow-hidden transition-all"
+      style={{
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border-md)',
+      }}
+      // Propagate focus-visible ring to the wrapper so it looks unified
+      onFocusCapture={(e) => {
+        (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--accent)';
+      }}
+      onBlurCapture={(e) => {
+        // Only reset if focus left the whole wrapper
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+          (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-md)';
+        }
+      }}
+    >
+      {/* Left icon — fixed width, never shrinks */}
+      <span
+        className="flex items-center justify-center shrink-0"
+        style={{ width: '44px', color: 'var(--text-muted)' }}
+      >
+        {icon}
+      </span>
+
+      {/* The input grows to fill remaining space */}
+      {children}
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
-  const { t } = useI18n(); // NEW
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -39,6 +73,18 @@ export default function LoginPage() {
     }
   };
 
+  // Shared style for every <input> — no left/right padding needed because
+  // the IconInput wrapper handles spacing via flex children.
+  const inputStyle: React.CSSProperties = {
+    background: 'transparent',
+    border: 'none',
+    outline: 'none',
+    color: 'var(--text)',
+    width: '100%',
+    fontSize: '14px',
+    padding: '10px 0',       // vertical padding only; horizontal handled by flex
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg)' }}>
       <div
@@ -47,6 +93,7 @@ export default function LoginPage() {
       />
 
       <div className="relative w-full max-w-md animate-slide-up">
+        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div
             className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
@@ -62,57 +109,62 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* Card */}
         <div className="p-8 rounded-2xl" style={{ background: 'var(--surface-1)', border: '1px solid var(--border)' }}>
           <form onSubmit={handleLogin} className="space-y-4">
+
+            {/* ── Email ── */}
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
                 {t('login_email_label')}
               </label>
-              <div className="relative">
-                <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+              <IconInput icon={<Mail size={16} />}>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   placeholder="you@example.com"
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none transition-all"
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border-md)', color: 'var(--text)' }}
-                  onFocus={(e) => (e.target.style.borderColor = 'var(--accent)')}
-                  onBlur={(e) => (e.target.style.borderColor = 'var(--border-md)')}
+                  style={{ ...inputStyle, paddingRight: '14px' }}
                 />
-              </div>
+              </IconInput>
             </div>
 
+            {/* ── Password ── */}
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-muted)' }}>
                 {t('login_password_label')}
               </label>
-              <div className="relative">
-                <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+              <IconInput icon={<Lock size={16} />}>
+                {/*
+                  The input and the eye button are SIBLINGS inside the flex row.
+                  The input gets `flex: 1` so it fills whatever space is left
+                  after the lock icon (44px) and the eye button (44px fixed).
+                  Text can NEVER reach under the eye button.
+                */}
                 <input
                   type={showPw ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-9 pr-10 py-2.5 rounded-xl text-sm outline-none transition-all"
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border-md)', color: 'var(--text)' }}
-                  onFocus={(e) => (e.target.style.borderColor = 'var(--accent)')}
-                  onBlur={(e) => (e.target.style.borderColor = 'var(--border-md)')}
+                  style={{ ...inputStyle, flex: 1, minWidth: 0 }}
                 />
+                {/* Eye toggle — fixed 44px, same as left icon slot */}
                 <button
                   type="button"
                   onClick={() => setShowPw(!showPw)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity"
+                  className="shrink-0 flex items-center justify-center opacity-50 hover:opacity-100 transition-opacity"
+                  style={{ width: '44px', color: 'var(--text-muted)' }}
+                  tabIndex={0}
+                  aria-label={showPw ? 'Hide password' : 'Show password'}
                 >
-                  {showPw
-                    ? <EyeOff size={14} style={{ color: 'var(--text-muted)' }} />
-                    : <Eye size={14} style={{ color: 'var(--text-muted)' }} />}
+                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
-              </div>
+              </IconInput>
             </div>
 
+            {/* Error */}
             {error && (
               <div
                 className="px-3 py-2.5 rounded-xl text-sm"
