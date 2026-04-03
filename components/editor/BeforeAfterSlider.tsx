@@ -1,197 +1,226 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { ArrowLeftRight } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
+import { formatBytes } from '@/lib/imageProcessing';
 
 interface Props {
   beforeUrl: string | null;
   afterUrl: string | null;
+  editedSize?: number;
+  originalSize?: number;
 }
 
-export function BeforeAfterSlider({ beforeUrl, afterUrl }: Props) {
+export function BeforeAfterSlider({ beforeUrl, afterUrl, editedSize, originalSize }: Props) {
   const { t } = useI18n();
-  const [sliderX, setSliderX] = useState(50);
-  const [isDragging, setIsDragging] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const hasAfter = !!afterUrl && afterUrl !== beforeUrl;
 
-  const updateSlider = useCallback((clientX: number) => {
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(100, ((clientX - rect.left) / rect.width) * 100));
-    setSliderX(pct);
-  }, []);
-
-  // Global mouse tracking so dragging works even if cursor leaves the container
-  useEffect(() => {
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      if (isDragging) updateSlider(e.clientX);
-    };
-    const handleGlobalMouseUp = () => setIsDragging(false);
-
-    if (isDragging) {
-      window.addEventListener('mousemove', handleGlobalMouseMove);
-      window.addEventListener('mouseup', handleGlobalMouseUp);
-    }
-    return () => {
-      window.removeEventListener('mousemove', handleGlobalMouseMove);
-      window.removeEventListener('mouseup', handleGlobalMouseUp);
-    };
-  }, [isDragging, updateSlider]);
-
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent) => { updateSlider(e.touches[0].clientX); },
-    [updateSlider]
-  );
-
-  // Empty state
-  if (!beforeUrl && !afterUrl) {
+  // ── Nothing uploaded yet ───────────────────────────────────────────────────
+  if (!beforeUrl) {
     return (
       <div
-        className="mx-auto max-w-[500px] w-full flex flex-col items-center justify-center gap-3 rounded-2xl p-8 text-center"
+        className="w-full flex flex-col items-center justify-center gap-3 rounded-2xl p-10 text-center"
         style={{
-          minHeight: '240px',
-          border: '1px dashed rgba(255,255,255,0.12)',
-          background: 'rgba(255,255,255,0.03)',
+          minHeight: '340px',
+          border: '1px dashed rgba(255,255,255,0.1)',
+          background: 'rgba(255,255,255,0.02)',
         }}
       >
-        <ArrowLeftRight size={24} style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-          {t('compare_title')}
-        </p>
-        <p className="text-xs" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
-          {t('compare_empty')}
-        </p>
+        <svg
+          width="36" height="36" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" strokeWidth="1.4"
+          style={{ color: 'var(--text-muted)', opacity: 0.35 }}
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <path d="M21 15l-5-5L5 21" />
+        </svg>
+        <div>
+          <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+            {t('editor_no_image_title')}
+          </p>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-muted)', opacity: 0.55 }}>
+            {t('editor_no_image_sub')}
+          </p>
+        </div>
       </div>
     );
   }
 
-  const hasAfter = !!afterUrl && afterUrl !== beforeUrl;
-
-  return (
-    <div className="mx-auto max-w-[700px] w-full space-y-3">
+  // ── No edits yet — single image, full frame ────────────────────────────────
+  if (!hasAfter) {
+    return (
       <div
-        ref={containerRef}
-        className="relative overflow-hidden rounded-2xl select-none cursor-col-resize"
+        className="w-full relative rounded-2xl overflow-hidden checkerboard"
         style={{
-          aspectRatio: '16/9',
-          background: '#0a0a0a',
-          touchAction: 'none',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+          background: '#0a0d14',
           border: '1px solid rgba(255,255,255,0.08)',
+          minHeight: '320px',
         }}
-        onMouseDown={() => setIsDragging(true)}
-        onTouchStart={() => setIsDragging(true)}
-        onTouchMove={handleTouchMove}
       >
-        {/* BOTTOM LAYER: AFTER image (full width) */}
-        {afterUrl && (
-          <img
-            src={afterUrl}
-            alt={t('compare_after')}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            draggable={false}
-          />
-        )}
+        {/* BEFORE label — top-left overlay */}
+        <div
+          className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-md
+                     text-[10px] font-bold uppercase tracking-widest pointer-events-none"
+          style={{
+            background: 'rgba(0,0,0,0.6)',
+            color: 'rgba(255,255,255,0.7)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          {t('compare_before')}
+          {originalSize != null && (
+            <span className="ml-1.5 opacity-60 normal-case font-normal tracking-normal">
+              {formatBytes(originalSize)}
+            </span>
+          )}
+        </div>
 
-        {/* TOP LAYER: BEFORE image, clipped by clipPath */}
-        {beforeUrl && (
-          <img
-            src={beforeUrl}
-            alt={t('compare_before')}
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-            style={{
-              clipPath: `inset(0 ${100 - sliderX}% 0 0)`,
-              zIndex: 5,
-            }}
-            draggable={false}
-          />
-        )}
+        {/* Image — centered, contains proportions */}
+        <img
+          src={beforeUrl}
+          alt={t('compare_before')}
+          draggable={false}
+          className="w-full h-full"
+          style={{
+            display: 'block',
+            maxHeight: '520px',
+            objectFit: 'contain',
+          }}
+        />
 
-        {hasAfter && (
-          <>
-            {/* AFTER label — left side (the image underneath, the edited one) */}
-            <div
-              className="absolute z-20 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest pointer-events-none"
-              style={{
-                top: '14px',
-                left: '14px',
-                background: 'rgba(34,211,238,0.75)',
-                color: '#000',
-                backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(255,255,255,0.15)',
-              }}
-            >
-              {t('compare_after')}
-            </div>
+        {/* "Apply edits" hint — bottom center overlay */}
+        <div
+          className="absolute bottom-3 left-1/2 -translate-x-1/2
+                     px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap pointer-events-none"
+          style={{
+            background: 'rgba(0,0,0,0.65)',
+            color: 'var(--text-muted)',
+            backdropFilter: 'blur(6px)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          {t('compare_no_edits')}
+        </div>
+      </div>
+    );
+  }
 
-            {/* BEFORE label — right side (the original clipped on top) */}
-            <div
-              className="absolute z-20 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest pointer-events-none"
-              style={{
-                top: '14px',
-                right: '14px',
-                background: 'rgba(0,0,0,0.65)',
-                color: '#fff',
-                backdropFilter: 'blur(4px)',
-                border: '1px solid rgba(255,255,255,0.12)',
-              }}
-            >
-              {t('compare_before')}
-            </div>
+  // ── Both images — ONE shared horizontal frame, split down the middle ───────
+  //
+  // The outer box is a single rounded container. Inside it we use a CSS grid
+  // with two equal columns. Both <img> elements share the SAME row height,
+  // determined by the tallest image, so they are always vertically aligned.
+  // A thin vertical divider with a "VS" pill sits between the two columns.
+  //
+  return (
+    <div
+      className="w-full relative rounded-2xl overflow-hidden checkerboard"
+      style={{
+        background: '#0a0d14',
+        border: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+        /* Grid: two equal columns + a 1px divider column in the middle */
+        display: 'grid',
+        gridTemplateColumns: '1fr 1px 1fr',
+        minHeight: '320px',
+      }}
+    >
+      {/* ── LEFT CELL: BEFORE ───────────────────────────────────────────── */}
+      <div className="relative flex items-center justify-center p-3">
+        {/* Label — top-left overlay inside this cell */}
+        <div
+          className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-md
+                     text-[10px] font-bold uppercase tracking-widest pointer-events-none"
+          style={{
+            background: 'rgba(0,0,0,0.6)',
+            color: 'rgba(255,255,255,0.75)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          {t('compare_before')}
+          {originalSize != null && (
+            <span className="ml-1.5 opacity-60 normal-case font-normal tracking-normal">
+              {formatBytes(originalSize)}
+            </span>
+          )}
+        </div>
 
-            {/* Divider line + drag handle */}
-            <div
-              className="absolute top-0 bottom-0 z-10"
-              style={{
-                left: `${sliderX}%`,
-                width: '2px',
-                background: 'rgba(255,255,255,0.9)',
-                boxShadow: '0 0 12px rgba(0,0,0,0.6)',
-              }}
-            >
-              {/* Handle circle */}
-              <div
-                className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex items-center justify-center rounded-full"
-                style={{
-                  width: '38px',
-                  height: '38px',
-                  background: '#fff',
-                  boxShadow: '0 2px 16px rgba(0,0,0,0.55)',
-                  border: '2.5px solid rgba(0,0,0,0.08)',
-                }}
-              >
-                <ArrowLeftRight size={15} style={{ color: '#111' }} />
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Single-image overlay when no edits applied yet */}
-        {!hasAfter && beforeUrl && (
-          <div
-            className="absolute inset-0 flex items-center justify-center z-20"
-            style={{ pointerEvents: 'none' }}
-          >
-            <div
-              className="px-3 py-1.5 rounded-lg text-xs font-medium"
-              style={{ background: 'rgba(0,0,0,0.65)', color: 'var(--text-muted)', backdropFilter: 'blur(6px)' }}
-            >
-              {t('compare_no_edits')}
-            </div>
-          </div>
-        )}
+        <img
+          src={beforeUrl}
+          alt={t('compare_before')}
+          draggable={false}
+          style={{
+            display: 'block',
+            maxWidth: '100%',
+            maxHeight: '500px',
+            width: 'auto',
+            height: 'auto',
+            objectFit: 'contain',
+          }}
+        />
       </div>
 
-      {/* Drag hint */}
-      {hasAfter && (
-        <p
-          className="text-center font-bold tracking-[0.18em] uppercase"
-          style={{ fontSize: '10px', color: 'var(--text-muted)', opacity: 0.55 }}
+      {/* ── CENTRE DIVIDER ──────────────────────────────────────────────── */}
+      <div
+        className="relative flex items-center justify-center"
+        style={{ background: 'rgba(255,255,255,0.07)' }}
+      >
+        {/* VS pill — centred on the divider line */}
+        <div
+          className="absolute flex items-center justify-center rounded-full
+                     text-[9px] font-black tracking-widest z-20"
+          style={{
+            width: '28px',
+            height: '28px',
+            background: 'var(--surface-3)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            color: 'var(--text-muted)',
+            left: '50%',
+            top:  '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
         >
-          {t('compare_hint')}
-        </p>
-      )}
+          VS
+        </div>
+      </div>
+
+      {/* ── RIGHT CELL: AFTER ───────────────────────────────────────────── */}
+      <div className="relative flex items-center justify-center p-3">
+        {/* Label — top-right overlay inside this cell */}
+        <div
+          className="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-md
+                     text-[10px] font-bold uppercase tracking-widest pointer-events-none"
+          style={{
+            background: 'rgba(34,211,238,0.18)',
+            color: 'var(--accent)',
+            border: '1px solid rgba(34,211,238,0.35)',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          {t('compare_after')}
+          {editedSize != null && (
+            <span className="ml-1.5 opacity-70 normal-case font-normal tracking-normal">
+              {formatBytes(editedSize)}
+            </span>
+          )}
+        </div>
+
+        <img
+          src={afterUrl}
+          alt={t('compare_after')}
+          draggable={false}
+          style={{
+            display: 'block',
+            maxWidth: '100%',
+            maxHeight: '500px',
+            width: 'auto',
+            height: 'auto',
+            objectFit: 'contain',
+          }}
+        />
+      </div>
     </div>
   );
 }
